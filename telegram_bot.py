@@ -1,17 +1,13 @@
 import ptbot
 
-import os 
+import os
+
+import time
 
 from pytimeparse import parse
 
 from dotenv import load_dotenv
 
-
-load_dotenv()
-TG_TOKEN = os.getenv("TG_TOKEN")
-
-
-bot = ptbot.Bot(TG_TOKEN)
 
 
 def render_progressbar(total, iteration, prefix='', suffix='', length=30, fill='█', zfill='░'):
@@ -23,7 +19,7 @@ def render_progressbar(total, iteration, prefix='', suffix='', length=30, fill='
     return '{0} |{1}| {2}% {3}'.format(prefix, pbar, percent, suffix)
 
 
-def notify_progress(secs_left, chat_id, message_id, total):
+def notify_progress(bot, secs_left, chat_id, message_id, total):
 	remained = total - secs_left
 	progress = render_progressbar(total, remained)
 	if secs_left > 0:
@@ -34,7 +30,7 @@ def notify_progress(secs_left, chat_id, message_id, total):
 			"{0}\nВремя вышло!".format(progress))
 
 
-def timer(chat_id, message):
+def timer(chat_id, message, bot):
 	delay = parse(message)
 	if delay is None or delay <= 0:
 		return
@@ -43,13 +39,22 @@ def timer(chat_id, message):
 
 	
 	for sec in range(delay, 0, -1):
-		notify_progress(sec, chat_id, message_id, delay)
+		notify_progress(bot, sec, chat_id, message_id, delay)
 		time.sleep(1)
-	notify_progress(0, chat_id, message_id, delay)
+	notify_progress(bot, 0, chat_id, message_id, delay)
 
 
 def main():
-	bot.reply_on_message(timer)
+	load_dotenv()
+	TG_TOKEN = os.getenv("TG_TOKEN")
+	bot = ptbot.Bot(TG_TOKEN)
+
+
+	def handle_message(chat_id, message):
+		timer(chat_id, message, bot)
+
+
+	bot.reply_on_message(handle_message)
 	bot.run_bot()
 
 
